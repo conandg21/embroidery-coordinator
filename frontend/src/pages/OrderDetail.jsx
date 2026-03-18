@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../contexts/AuthContext';
+import { ChatBubble } from '../components/ChatMessage';
 
 const STATUS_CONFIG = {
   intake:       { label: 'Intake',       color: 'bg-blue-100 text-blue-800',    next: 'digitization' },
@@ -35,8 +36,10 @@ export default function OrderDetail() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [nextStatus, setNextStatus] = useState('');
   const fileInputRef = useRef();
+  const chatImgRef = useRef();
   const msgEndRef = useRef();
   const pollRef = useRef();
+  const [uploadingChatImg, setUploadingChatImg] = useState(false);
 
   const loadOrder = async () => {
     try {
@@ -76,6 +79,26 @@ export default function OrderDetail() {
       setMessages(m => [...m, res.data]);
       setNewMsg('');
     } catch {} finally { setSendingMsg(false); }
+  };
+
+  const sendChatImage = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingChatImg(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('orderId', id);
+      const res = await api.post('/chat/upload-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setMessages(m => [...m, res.data]);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Image upload failed');
+    } finally {
+      setUploadingChatImg(false);
+      chatImgRef.current.value = '';
+    }
   };
 
   const handleFileUpload = async (e) => {
@@ -284,20 +307,33 @@ export default function OrderDetail() {
               <p className="text-center text-gray-400 text-sm mt-8">No messages yet</p>
             )}
             {messages.map(msg => (
-              <div key={msg.id} className={`flex flex-col ${msg.user_id === user?.id ? 'items-end' : 'items-start'}`}>
-                <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${msg.user_id === user?.id ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
-                  {msg.user_id !== user?.id && <p className="text-xs font-semibold mb-1 text-brand-600">{msg.user_name}</p>}
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+              <div key={msg.id} className={`flex gap-2 ${msg.user_id === user?.id ? 'flex-row-reverse' : ''}`}>
+                <div className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-xs flex-shrink-0 mt-1">
+                  {msg.user_name?.charAt(0).toUpperCase()}
                 </div>
-                <p className="text-xs text-gray-400 mt-1 px-1">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                <ChatBubble
+                  msg={msg}
+                  isOwn={msg.user_id === user?.id}
+                  canDelete={msg.user_id === user?.id || user?.role === 'admin'}
+                  onDelete={async (msgId) => {
+                    try { await api.delete(`/chat/messages/${msgId}`); setMessages(m => m.filter(m2 => m2.id !== msgId)); } catch {}
+                  }}
+                />
               </div>
             ))}
             <div ref={msgEndRef} />
           </div>
-          <form onSubmit={sendMessage} className="p-3 border-t border-gray-100 flex gap-2">
+          <form onSubmit={sendMessage} className="p-3 border-t border-gray-100 flex gap-2 items-center">
+            <input type="file" ref={chatImgRef} accept="image/*" className="hidden" onChange={sendChatImage} />
+            <button type="button" onClick={() => chatImgRef.current.click()}
+              disabled={uploadingChatImg}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-sm flex-shrink-0 disabled:opacity-50"
+              title="Send a photo">
+              {uploadingChatImg ? <div className="w-3 h-3 border-2 border-gray-400 border-t-gray-700 rounded-full animate-spin" /> : '📷'}
+            </button>
             <input className="input flex-1 text-sm" placeholder="Type a message…" value={newMsg}
               onChange={e => setNewMsg(e.target.value)} />
-            <button type="submit" className="btn-primary px-3" disabled={sendingMsg || !newMsg.trim()}>→</button>
+            <button type="submit" className="btn-primary px-3 h-9 flex-shrink-0" disabled={sendingMsg || !newMsg.trim()}>→</button>
           </form>
         </div>
       </div>

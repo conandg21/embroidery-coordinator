@@ -178,8 +178,8 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="card overflow-hidden">
+      {/* Desktop Table */}
+      <div className="card overflow-hidden hidden md:block">
         {loading ? (
           <div className="flex items-center justify-center h-40">
             <div className="w-7 h-7 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
@@ -200,28 +200,56 @@ export default function Orders() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {orders.map(order => (
-                <tr key={order.id}
-                  onClick={() => navigate(`/orders/${order.id}`)}
+                <tr key={order.id} onClick={() => navigate(`/orders/${order.id}`)}
                   className="hover:bg-gray-50 cursor-pointer transition-colors">
                   <td className="px-4 py-3 font-mono text-xs text-gray-500">{order.order_number}</td>
                   <td className="px-4 py-3 font-medium text-gray-900 max-w-xs truncate">{order.title}</td>
                   <td className="px-4 py-3 text-gray-600">{order.customer_name || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`badge ${STATUS_CONFIG[order.status]?.color}`}>{STATUS_CONFIG[order.status]?.label || order.status}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`badge ${PRIORITY_CONFIG[order.priority]}`}>{order.priority}</span>
-                  </td>
+                  <td className="px-4 py-3"><span className={`badge ${STATUS_CONFIG[order.status]?.color}`}>{STATUS_CONFIG[order.status]?.label || order.status}</span></td>
+                  <td className="px-4 py-3"><span className={`badge ${PRIORITY_CONFIG[order.priority]}`}>{order.priority}</span></td>
                   <td className="px-4 py-3 text-gray-600">{order.assigned_to_name || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {order.due_date ? new Date(order.due_date).toLocaleDateString() : '—'}
-                  </td>
+                  <td className="px-4 py-3 text-gray-600">{order.due_date ? new Date(order.due_date).toLocaleDateString() : '—'}</td>
                   <td className="px-4 py-3 text-gray-500">{order.file_count > 0 ? `📎 ${order.file_count}` : '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Mobile Card List */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="w-7 h-7 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="card text-center py-14 text-gray-400">
+            <p className="text-4xl mb-2">📋</p><p>No orders found</p>
+          </div>
+        ) : orders.map(order => (
+          <div key={order.id} onClick={() => navigate(`/orders/${order.id}`)}
+            className="card p-4 cursor-pointer active:bg-gray-50 transition-colors">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 truncate">{order.title}</p>
+                <p className="font-mono text-xs text-gray-400 mt-0.5">{order.order_number}</p>
+              </div>
+              <span className={`badge flex-shrink-0 ${STATUS_CONFIG[order.status]?.color}`}>
+                {STATUS_CONFIG[order.status]?.label}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-3 text-xs text-gray-500">
+              {order.customer_name && <span>👤 {order.customer_name}</span>}
+              {order.assigned_to_name && <span>🔧 {order.assigned_to_name}</span>}
+              {order.due_date && <span>📅 {new Date(order.due_date).toLocaleDateString()}</span>}
+              {order.file_count > 0 && <span>📎 {order.file_count} files</span>}
+              {order.priority !== 'normal' && (
+                <span className={`badge ${PRIORITY_CONFIG[order.priority]}`}>{order.priority}</span>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {showNew && <NewOrderModal onClose={() => setShowNew(false)} onCreated={() => loadOrders()} />}

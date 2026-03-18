@@ -109,7 +109,7 @@ export default function Customers() {
       <input className="input w-72" placeholder="Search customers…" value={search}
         onChange={e => setSearch(e.target.value)} />
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center h-40">
             <div className="w-7 h-7 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
