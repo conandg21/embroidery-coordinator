@@ -26,7 +26,7 @@ router.post('/', requireAdmin, async (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required' });
   }
-  const validRoles = ['admin', 'staff', 'digitizer', 'production'];
+  const validRoles = ['admin', 'manager', 'digitizer', 'production_tech'];
   if (role && !validRoles.includes(role)) {
     return res.status(400).json({ error: 'Invalid role' });
   }
