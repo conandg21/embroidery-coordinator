@@ -118,6 +118,22 @@ export default function OrderDetail() {
     }
   };
 
+  const downloadFile = async (fileId, fileName) => {
+    try {
+      const res = await api.get(`/files/download/${fileId}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      alert('Download failed. The file may no longer exist on the server.');
+    }
+  };
+
   const deleteFile = async (fileId) => {
     if (!confirm('Delete this file?')) return;
     try {
@@ -256,10 +272,10 @@ export default function OrderDetail() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <a href={`/api/files/download/${file.id}`}
+                      <button onClick={() => downloadFile(file.id, file.original_name)}
                         className="text-xs text-brand-600 hover:underline px-2 py-1 rounded hover:bg-brand-50">
                         Download
-                      </a>
+                      </button>
                       {/* Digitizers can never delete files */}
                       {user?.role !== 'digitizer' && (isAdmin || ['manager'].includes(user?.role) || file.uploaded_by === user?.id) && (
                         <button onClick={() => deleteFile(file.id)}

@@ -97,6 +97,21 @@ router.post('/upload/:orderId', upload.array('files', 10), async (req, res) => {
   }
 });
 
+// GET /api/files/download/:fileId  — MUST be before /:orderId to avoid route conflict
+router.get('/download/:fileId', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM files WHERE id = $1', [req.params.fileId]);
+    if (!result.rows[0]) return res.status(404).json({ error: 'File not found' });
+    const file = result.rows[0];
+    const filePath = path.join(__dirname, '../uploads', file.stored_name);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
+    req.logActivity('DOWNLOAD_FILE', 'file', file.id, { name: file.original_name });
+    res.download(filePath, file.original_name);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/files/:orderId
 router.get('/:orderId', async (req, res) => {
   try {
@@ -107,21 +122,6 @@ router.get('/:orderId', async (req, res) => {
       [req.params.orderId]
     );
     res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// GET /api/files/download/:fileId
-router.get('/download/:fileId', async (req, res) => {
-  try {
-    const result = await db.query('SELECT * FROM files WHERE id = $1', [req.params.fileId]);
-    if (!result.rows[0]) return res.status(404).json({ error: 'File not found' });
-    const file = result.rows[0];
-    const filePath = path.join(__dirname, '../uploads', file.stored_name);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
-    req.logActivity('DOWNLOAD_FILE', 'file', file.id, { name: file.original_name });
-    res.download(filePath, file.original_name);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
